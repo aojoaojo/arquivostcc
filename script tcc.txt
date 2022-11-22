@@ -1,0 +1,90 @@
+//INDICES DE VEGETAÇÃO
+Map.setCenter(-43.68713423045252,-18.32579271359129, 9);
+var Id = function(image)
+{
+  
+// NDVI
+var ndvi = image.normalizedDifference(['B8','B4']);
+  image = image.addBands(ndvi.rename('NDVI'));
+
+// NDWI
+
+var ndwi = image.normalizedDifference(['B8', 'B3']);
+  image = image.addBands(ndwi.rename('NDWI'));
+  
+// MNDWI
+var mndwi = image.normalizedDifference(['B3','B11']);
+  image = image.addBands(mndwi.rename('MNDWI'));
+  
+// SWCI
+var swci = image.normalizedDifference(['B11','B12']);
+  image = image.addBands(swci.rename('SWCI'));
+  
+//RETORNANDO A IMAGEM
+return image;
+}
+
+//COLEÇÃO DE IMAGENS
+var SdEM = ee.FeatureCollection('users/joaovmbm/sdem');
+
+var img = ee.ImageCollection('COPERNICUS/S2')
+    .filterBounds(SdEM)
+    .filterMetadata('CLOUD_COVERAGE_ASSESSMENT','less_than',1)
+    .filterDate('2017-05-01','2017-10-31')
+    .map(Id);
+//RAMPA DE CORES
+var palette2 = ['FFFFFF', 'CE7E45', 'DF923D', 'F1B555', 'FCD163', '99B718',
+               '74A901', '66A000', '529400', '3E8601', '207401', '056201',
+               '004C00', '023B01', '012E01', '011D01', '011301'];
+               
+//PALETA NDWI
+var palette3 = ['00ffff','0000ff'];
+
+//PALETA MNDWI
+var mndwiParams = {
+  min: -1,
+  max: 1,
+  palette: ['white', 'blue']
+};
+
+//CRIANDO VISUALIZAÇÃO RGB
+var rgbVis = {
+  min: 0.00,
+  max: 3000,
+  bands: ['B4', 'B3', 'B2']
+};
+
+// TENTATIVA DE IMPORTAR PALETAS
+var palettes = require('users/gena/packages:palettes');
+
+var palette = palettes.colorbrewer.Blues[9];
+
+//MOSTRAR NO MAPA
+
+    //Img RGB
+Map.addLayer(img, rgbVis, 'Image');
+
+    //NDVI
+Map.addLayer(img,{min:0, max:1, bands:['NDVI'], palette: palette2}, 'NDVI', false);
+
+    //NDWI
+Map.addLayer(img, {min:0.5, max:1, bands:['NDWI'], palette: palette3}, 'NDWI', false);
+
+    //MNDWI
+Map.addLayer(img, {min:-1, max:1, bands:['MNDWI'], palette: palette3}, 'MNDWI', false);
+
+    //SCWI
+Map.addLayer(img, {min:0, max:1, bands:['SWCI'], palette: palette}, 'SWCI', false);
+    
+Map.addLayer(table,{palette:['black']}, 'SdEM', false);
+//ALTERAÇÕES NO NDVI
+var visParams2 = {
+  bands:['NDVI'],
+  min:0,
+  max:1,
+  opacity:1,
+  palette:palette,
+};
+
+//ADICIONANDO TURFEIRAS REFERENCIA NO MAPA
+Map.addLayer(table2,{palette:['red']},'Turf_ref', false);
